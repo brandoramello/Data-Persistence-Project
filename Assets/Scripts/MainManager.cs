@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -12,16 +14,21 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
+    public Text playerName;
+    public Text BestScoreText;
     
     private bool m_Started = false;
     private int m_Points;
     
     private bool m_GameOver = false;
 
+    private int bestScore;
+
     
     // Start is called before the first frame update
     void Start()
     {
+      
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -36,6 +43,9 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        playerName.text = StateManager.playerName;
+        LoadScore();
     }
 
     private void Update()
@@ -72,5 +82,40 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        
+        SaveScore();
+        
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public string playerName;
+        public int score;
+    }
+    public void SaveScore()
+    {
+        SaveData data = new SaveData();
+        data.playerName = StateManager.playerName;
+        data.score = m_Points;
+        if (m_Points > bestScore)
+        {
+            string json = JsonUtility.ToJson(data);
+
+            File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
+    }
+
+    public void LoadScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData data = JsonUtility.FromJson<SaveData>(json);
+            BestScoreText.text = "Best Score: " + data.playerName + ": " + data.score;
+            bestScore = data.score;
+            Debug.Log(bestScore);
+        }
     }
 }
